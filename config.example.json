@@ -1,0 +1,19 @@
+{
+  "theme": "rose-pine",
+  "screen": 0,
+  "sizes": {
+    "height": 40,
+    "fontSize": 16,
+    "fontWeight": 500,
+    "borderSize": 2,
+    "radius": 4,
+    "shadowSizeBar": 4,
+    "shadowSizeButton": 2,
+    "barMarginX": 20,
+    "barMarginY": 10
+  },
+  "weather": {
+    "latitude": 59.3293,
+    "longitude": 18.0686
+  }
+}

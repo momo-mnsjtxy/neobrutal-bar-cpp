@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/fonts">
+    <file alias="tabler-icons.ttf">assets/fonts/tabler-icons.ttf</file>
+    <file alias="tabler-icons-filled.ttf">assets/fonts/tabler-icons-filled.ttf</file>
+  </qresource>
+  <qresource prefix="/data">
+    <file alias="tabler_glyphs.json">assets/data/tabler_glyphs.json</file>
+    <file alias="icon_map.json">assets/data/icon_map.json</file>
+    <file alias="ignored_apps.json">assets/data/ignored_apps.json</file>
+  </qresource>
+</RCC>
