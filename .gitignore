@@ -1,0 +1,6 @@
+build/
+*.user
+.cache/
+compile_commands.json
+*.o
+*.obj
