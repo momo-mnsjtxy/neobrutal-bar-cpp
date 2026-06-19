@@ -4,6 +4,7 @@
 #include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusReply>
+#include <QDebug>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -61,10 +62,13 @@ MediaProvider::~MediaProvider() = default;
 MediaInfo MediaProvider::info() const { return info_; }
 
 void MediaProvider::refresh() {
-  MediaInfo info;
+  // Transient D-Bus failures keep the previous value so the widget doesn't
+  // flicker out; only a successful query (which may legitimately find no
+  // player) is allowed to clear info_.
   QDBusConnection bus = QDBusConnection::sessionBus();
   if (!bus.isConnected()) {
-    info_ = info;
+    qWarning() << "MediaProvider: D-Bus session bus not connected; "
+                  "keeping last value";
     return;
   }
 
@@ -72,10 +76,12 @@ void MediaProvider::refresh() {
                      "org.freedesktop.DBus", bus);
   const QDBusReply<QStringList> names = dbus.call("ListNames");
   if (!names.isValid()) {
-    info_ = info;
+    qWarning() << "MediaProvider: ListNames failed:"
+               << names.error().message();
     return;
   }
 
+  MediaInfo info;
   QString chosen;
   for (const QString &name : names.value()) {
     if (!name.startsWith("org.mpris.MediaPlayer2.")) continue;

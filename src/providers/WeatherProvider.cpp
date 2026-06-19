@@ -1,5 +1,6 @@
 #include "providers/WeatherProvider.h"
 
+#include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkReply>
@@ -20,16 +21,23 @@ void WeatherProvider::refresh() {
 }
 
 void WeatherProvider::requestGeo() {
-  QNetworkRequest req(QUrl("http://ip-api.com/json/?fields=lat,lon,status"));
+  // ipwho.is offers HTTPS IP geolocation without an API key.
+  QNetworkRequest req(QUrl("https://ipwho.is/?fields=success,latitude,longitude"));
   QNetworkReply *reply = net_.get(req);
   connect(reply, &QNetworkReply::finished, this, [this, reply] {
     reply->deleteLater();
-    if (reply->error() != QNetworkReply::NoError) return;
-    const QJsonObject o =
-        QJsonDocument::fromJson(reply->readAll()).object();
-    if (o.value("status").toString() != "success") return;
-    lat_ = o.value("lat").toDouble();
-    lon_ = o.value("lon").toDouble();
+    if (reply->error() != QNetworkReply::NoError) {
+      qWarning() << "WeatherProvider: IP geolocation request failed:"
+                 << reply->errorString();
+      return;
+    }
+    const QJsonObject o = QJsonDocument::fromJson(reply->readAll()).object();
+    if (!o.value("success").toBool()) {
+      qWarning() << "WeatherProvider: IP geolocation lookup unsuccessful";
+      return;
+    }
+    lat_ = o.value("latitude").toDouble();
+    lon_ = o.value("longitude").toDouble();
     hasLocation_ = true;
     requestWeather();
   });
@@ -45,11 +53,19 @@ void WeatherProvider::requestWeather() {
   QNetworkReply *reply = net_.get(QNetworkRequest(QUrl(url)));
   connect(reply, &QNetworkReply::finished, this, [this, reply] {
     reply->deleteLater();
-    if (reply->error() != QNetworkReply::NoError) return;
+    // On a transient failure keep the previous reading rather than clearing it.
+    if (reply->error() != QNetworkReply::NoError) {
+      qWarning() << "WeatherProvider: weather request failed:"
+                 << reply->errorString();
+      return;
+    }
     const QJsonObject root =
         QJsonDocument::fromJson(reply->readAll()).object();
     const QJsonObject cur = root.value("current").toObject();
-    if (cur.isEmpty()) return;
+    if (cur.isEmpty()) {
+      qWarning() << "WeatherProvider: weather response missing 'current'";
+      return;
+    }
 
     WeatherInfo info;
     info.valid = true;
