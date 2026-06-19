@@ -84,7 +84,7 @@ void WorkspaceProvider::refresh() {
 void WorkspaceProvider::onTextMessage(const QString &message) {
   const QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
   if (!doc.isObject()) return;
-  const QJsonObject root = doc.toObject();
+  const QJsonObject root = doc.object();
   const QString msgType = root.value("messageType").toString();
 
   // Subscribed events just nudge us to re-read the workspace tree.
