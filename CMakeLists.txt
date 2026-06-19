@@ -14,19 +14,19 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network DBus)
-find_package(X11 REQUIRED)
-
-add_executable(neobrutal-bar
+set(neobar_sources
   src/main.cpp
   src/Theme.cpp
   src/Config.cpp
   src/Icons.cpp
+  # Headers whose implementation is split per-platform are listed so AUTOMOC
+  # still processes their Q_OBJECT classes (it only auto-pairs headers with a
+  # same-named .cpp, which these no longer have).
+  src/providers/SystemInfo.h
+  src/providers/WorkspaceProvider.h
+  src/providers/MediaProvider.h
   src/providers/Provider.cpp
-  src/providers/SystemInfo.cpp
   src/providers/WeatherProvider.cpp
-  src/providers/WorkspaceProvider.cpp
-  src/providers/MediaProvider.cpp
   src/widgets/UiHelpers.cpp
   src/widgets/AppIconMap.cpp
   src/widgets/Meter.cpp
@@ -38,13 +38,47 @@ add_executable(neobrutal-bar
   resources.qrc
 )
 
-target_include_directories(neobrutal-bar PRIVATE src ${X11_INCLUDE_DIR})
+if(WIN32)
+  list(APPEND neobar_sources
+    src/providers/SystemInfo_win.cpp
+    src/providers/WorkspaceProvider_win.cpp
+    src/providers/MediaProvider_win.cpp
+  )
+else()
+  list(APPEND neobar_sources
+    src/providers/SystemInfo_linux.cpp
+    src/providers/WorkspaceProvider_linux.cpp
+    src/providers/MediaProvider_linux.cpp
+  )
+endif()
 
-target_link_libraries(neobrutal-bar PRIVATE
-  Qt6::Widgets
-  Qt6::Network
-  Qt6::DBus
-  ${X11_LIBRARIES}
-)
+add_executable(neobrutal-bar ${neobar_sources})
+
+target_include_directories(neobrutal-bar PRIVATE src)
+
+if(WIN32)
+  # Windows: GlazeWM workspaces speak over a WebSocket; media uses WinRT.
+  find_package(Qt6 REQUIRED COMPONENTS Widgets Network WebSockets)
+  target_link_libraries(neobrutal-bar PRIVATE
+    Qt6::Widgets
+    Qt6::Network
+    Qt6::WebSockets
+    iphlpapi   # GetAdaptersAddresses
+    wlanapi    # WlanQueryInterface (wifi SSID / signal)
+    windowsapp # C++/WinRT (Windows.Media.Control)
+  )
+  set_target_properties(neobrutal-bar PROPERTIES WIN32_EXECUTABLE ON)
+else()
+  # Linux: workspaces via EWMH/X11, media via MPRIS over D-Bus.
+  find_package(Qt6 REQUIRED COMPONENTS Widgets Network DBus)
+  find_package(X11 REQUIRED)
+  target_include_directories(neobrutal-bar PRIVATE ${X11_INCLUDE_DIR})
+  target_link_libraries(neobrutal-bar PRIVATE
+    Qt6::Widgets
+    Qt6::Network
+    Qt6::DBus
+    ${X11_LIBRARIES}
+  )
+endif()
 
 install(TARGETS neobrutal-bar RUNTIME DESTINATION bin)

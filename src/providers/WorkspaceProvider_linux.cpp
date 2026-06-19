@@ -111,6 +111,8 @@ WorkspaceProvider::~WorkspaceProvider() {
   if (display_) XCloseDisplay(static_cast<Display *>(display_));
 }
 
+bool WorkspaceProvider::available() const { return display_ != nullptr; }
+
 void WorkspaceProvider::switchToDesktop(int index) {
   if (!display_) return;
   auto *dpy = static_cast<Display *>(display_);

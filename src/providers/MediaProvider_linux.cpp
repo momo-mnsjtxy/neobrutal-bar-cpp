@@ -54,6 +54,12 @@ void readMetadata(const QDBusConnection &bus, const QString &service,
 
 }  // namespace
 
+MediaProvider::MediaProvider(QObject *parent) : Provider(parent) {}
+
+MediaProvider::~MediaProvider() = default;
+
+MediaInfo MediaProvider::info() const { return info_; }
+
 void MediaProvider::refresh() {
   MediaInfo info;
   QDBusConnection bus = QDBusConnection::sessionBus();

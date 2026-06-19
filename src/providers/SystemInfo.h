@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QDateTime>
 #include <QString>
 
 #include "Types.h"
@@ -78,7 +79,9 @@ class DateProvider : public Provider {
   QString formatted() const { return formatted_; }
 
  protected:
-  void refresh() override;
+  void refresh() override {
+    formatted_ = QDateTime::currentDateTime().toString(format_);
+  }
 
  private:
   QString format_;

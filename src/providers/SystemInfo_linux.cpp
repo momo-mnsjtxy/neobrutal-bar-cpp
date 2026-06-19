@@ -1,6 +1,5 @@
 #include "providers/SystemInfo.h"
 
-#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -114,10 +113,6 @@ void NetworkProvider::refresh() {
   }
 
   info_ = info;
-}
-
-void DateProvider::refresh() {
-  formatted_ = QDateTime::currentDateTime().toString(format_);
 }
 
 }  // namespace neobar

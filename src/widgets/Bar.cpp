@@ -63,8 +63,12 @@ QWidget *iconValueBlock(const QString &iconName, const QColor &color, int size,
 
 Bar::Bar(const Config &config, QWidget *parent)
     : QWidget(parent), config_(config), theme_(config.theme) {
-  setWindowFlags(Qt::Window | Qt::FramelessWindowHint |
-                 Qt::WindowStaysOnTopHint);
+  Qt::WindowFlags flags =
+      Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint;
+#ifdef Q_OS_WIN
+  flags |= Qt::Tool;  // keep the bar out of the taskbar and Alt-Tab on Windows
+#endif
+  setWindowFlags(flags);
   setAttribute(Qt::WA_TranslucentBackground, true);
   setWindowTitle("neobrutal-bar");
 
