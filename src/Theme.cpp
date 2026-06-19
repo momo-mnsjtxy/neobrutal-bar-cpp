@@ -175,11 +175,23 @@ Theme material() {
 }  // namespace
 
 Theme Theme::builtin(const QString &name) {
+  // Each palette is built once and reused (function-local statics are
+  // initialised on first use, thread-safely in C++11+).
   const QString n = name.trimmed().toLower();
-  if (n == "catppuccin") return catppuccin();
-  if (n == "nord") return nord();
-  if (n == "material") return material();
-  return rosePine();
+  if (n == "catppuccin") {
+    static const Theme t = catppuccin();
+    return t;
+  }
+  if (n == "nord") {
+    static const Theme t = nord();
+    return t;
+  }
+  if (n == "material") {
+    static const Theme t = material();
+    return t;
+  }
+  static const Theme t = rosePine();
+  return t;
 }
 
 }  // namespace neobar

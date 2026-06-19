@@ -10,6 +10,8 @@
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Media.Control.h>
 
+#include <QDebug>
+
 #include <chrono>
 
 namespace neobar {
@@ -46,8 +48,10 @@ void MediaProvider::pollLoop() {
 
   winrt::init_apartment(winrt::apartment_type::multi_threaded);
 
+  bool loggedFailure = false;
   while (!stop_.load()) {
     MediaInfo info;
+    bool ok = true;
     try {
       auto manager =
           GlobalSystemMediaTransportControlsSessionManager::RequestAsync().get();
@@ -61,10 +65,17 @@ void MediaProvider::pollLoop() {
         info.artist = toQString(props.Artist());
       }
     } catch (...) {
-      info = MediaInfo{};  // SMTC can throw transiently; report no player.
+      // SMTC can throw transiently; keep the previous snapshot instead of
+      // clearing it. Log once per failure streak to avoid spamming.
+      ok = false;
+      if (!loggedFailure) {
+        qWarning() << "MediaProvider: SMTC query failed; keeping last value";
+        loggedFailure = true;
+      }
     }
 
-    {
+    if (ok) {
+      loggedFailure = false;
       std::lock_guard<std::mutex> lock(mutex_);
       shared_ = info;
     }

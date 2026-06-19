@@ -1,5 +1,7 @@
 #include "providers/WorkspaceProvider.h"
 
+#include <cstring>
+
 // X11 headers come last: they #define None/Bool/Status as macros which would
 // otherwise clobber identifiers in the project/Qt headers above.
 #include <X11/Xatom.h>
@@ -54,8 +56,9 @@ QString getUtf8(Display *dpy, Window win, Atom prop, Atom utf8) {
   unsigned char *data = nullptr;
   unsigned long n = 0;
   QString out;
+  // X11 does not guarantee a terminator, so use the returned byte count.
   if (getProp(dpy, win, prop, utf8, &data, &n) && data)
-    out = QString::fromUtf8(reinterpret_cast<char *>(data));
+    out = QString::fromUtf8(reinterpret_cast<char *>(data), static_cast<int>(n));
   if (data) XFree(data);
   return out;
 }
@@ -65,12 +68,15 @@ QStringList getUtf8List(Display *dpy, Window win, Atom prop, Atom utf8) {
   unsigned long n = 0;
   QStringList out;
   if (getProp(dpy, win, prop, utf8, &data, &n) && data) {
-    // Null-separated UTF-8 strings.
+    // Null-separated UTF-8 strings, bounded by the returned byte count (the
+    // buffer is not guaranteed to be null-terminated).
     const char *p = reinterpret_cast<char *>(data);
     const char *end = p + n;
     while (p < end) {
-      out << QString::fromUtf8(p);
-      p += qstrlen(p) + 1;
+      const char *nul = static_cast<const char *>(memchr(p, '\0', end - p));
+      const char *stop = nul ? nul : end;
+      out << QString::fromUtf8(p, static_cast<int>(stop - p));
+      p = stop + 1;
     }
   }
   if (data) XFree(data);
